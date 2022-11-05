@@ -72,9 +72,10 @@ profiler_t jmp = {
                      i.operands[1].reg.value == write_dep;
             });
 
-        if (mov_reg_write_dep == instrs.end()) return {};
-
-        vsp = mov_reg_write_dep->m_instr.operands[0].reg.value;
+        if (mov_reg_write_dep == instrs.end()) 
+          vsp = write_dep;
+        else
+          vsp = mov_reg_write_dep->m_instr.operands[0].reg.value;
       } else {
         // find the MOV REG, [VSP] instruction...
         const auto mov_reg_deref_vsp = std::find_if(
@@ -87,7 +88,8 @@ profiler_t jmp = {
                      i.operands[1].mem.base == vsp;
             });
 
-        if (mov_reg_deref_vsp == instrs.end()) return {};
+        if (mov_reg_deref_vsp == instrs.end()) 
+          return {};
 
         // find the MOV REG, mov_reg_deref_vsp->operands[0].reg.value
         const auto mov_vip_reg = std::find_if(
@@ -100,10 +102,27 @@ profiler_t jmp = {
                      i.operands[1].reg.value ==
                          mov_reg_deref_vsp->m_instr.operands[0].reg.value;
             });
+        //It is possible that mov_vip_reg is actually updating the rolling key, if so use original vip
+        const auto load_handler_rva = std::find_if(
+          mov_vip_reg, instrs.end(),
+          [&](const emu_instr_t& instr) -> bool {
+            const auto& i = instr.m_instr;
+            return i.mnemonic == ZYDIS_MNEMONIC_MOV &&
+                    i.operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
+                    vm::utils::is_32_bit_gp(i.operands[0].reg.value) &&
+                    i.operands[1].type == ZYDIS_OPERAND_TYPE_MEMORY &&
+                    i.operands[1].mem.base ==
+                        mov_vip_reg->m_instr.operands[0].reg.value;
+          });
 
-        if (mov_vip_reg == instrs.end()) return {};
+        if (mov_vip_reg == instrs.end()) 
+          return {};
 
-        vip = mov_vip_reg->m_instr.operands[0].reg.value;
+        vip = (load_handler_rva != instrs.end()) ? 
+          mov_vip_reg->m_instr.operands[0].reg.value : 
+          mov_vip_reg->m_instr.operands[1].reg.value; 
+        //Ok so basically mov_vip_reg, despite its name, isn't guaranteed to be
+        //mov vip, reg, and can in fact be mov rkey, vip. 
 
         // see if VSP gets updated as well...
         const auto mov_reg_vsp = std::find_if(
@@ -123,6 +142,7 @@ profiler_t jmp = {
       vinstr_t res;
       res.mnemonic = mnemonic_t::jmp;
       res.imm.has_imm = false;
+      res.stack_size = 64;
       return res;
     }};
 }

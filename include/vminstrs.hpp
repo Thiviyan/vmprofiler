@@ -16,6 +16,8 @@ enum class mnemonic_t : uint8_t {
   lreg,
   lconst,
   add,
+  _or,
+  _and, //The fucking idiots who wrote the standard thought reserving the word "and" was appropriate
   div,
   idiv,
   mul,
@@ -31,6 +33,7 @@ enum class mnemonic_t : uint8_t {
   shrd,
   lvsp,
   svsp,
+  lcr0,
   writecr3,
   readcr3,
   writecr8,
@@ -39,7 +42,8 @@ enum class mnemonic_t : uint8_t {
   rdtsc,
   call,
   jmp,
-  vmexit
+  vmexit,
+  writedr7
 };
 
 /// <summary>
@@ -286,6 +290,8 @@ extern profiler_t sreg;
 extern profiler_t lreg;
 extern profiler_t lconst;
 extern profiler_t add;
+extern profiler_t _or;
+extern profiler_t _and;
 extern profiler_t lvsp;
 extern profiler_t svsp;
 extern profiler_t nand;
@@ -293,18 +299,24 @@ extern profiler_t nop;
 extern profiler_t nor;
 extern profiler_t read;
 extern profiler_t write;
+extern profiler_t lcr0;
+extern profiler_t writedr7;
 extern profiler_t imul;
+extern profiler_t shl;
+extern profiler_t shld;
 extern profiler_t shr;
+extern profiler_t shrd;
+extern profiler_t shrd;
 extern profiler_t vmexit;
 
 /// <summary>
 /// unsorted vector of profiles... they get sorted once at runtime...
 /// </summary>
 inline std::vector<profiler_t*> profiles = {
-    &vmexit, &shr, &imul, &nor,  &write, &svsp,   &read, &nand,
-    &lvsp,   &add, &jmp,  &sreg, &lreg,  &lconst, &nop};
+    &vmexit, &shl, &shld, &shr, &shrd, &imul, &nor,  &write, &svsp, &read, 
+    &nand, &lvsp, &add, &jmp, &_or, &_and, &sreg, &lreg, &lcr0,  &lconst, &nop, &writedr7};
 
-/// <summary>
+/// <summary> 
 /// no i did not make this by hand, you cannot clown upon me!
 /// </summary>
 inline std::map<zydis_reg_t, uc_x86_reg> reg_map = {
