@@ -13,9 +13,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: configure
+      with:     
+        submodules: recursive
+    - name: cmake
       run: cmake -B build
-    - name: make
+    - name: cd
       run: cd make
     - name: make 
       run: make 
